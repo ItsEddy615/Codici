@@ -1,0 +1,178 @@
+import pygame
+import random
+from math import sqrt
+
+
+atoms=[]
+window_size = 400
+pygame.init()
+window = pygame.display.set_mode((window_size, window_size))
+K = []
+
+
+def caso():
+  n=random.uniform(-1,1)  
+  return n
+
+def draw(surface, x, y, color, size):
+    for i in range(0, size):
+        pygame.draw.line(surface, color, (x, y-1), (x, y+2), abs(size))
+
+def atom(x, y, c):
+    return {"x": x, "y": y, "vx": 0, "vy": 0, "color": c}
+
+def randomxy():
+    return round(random.random()*window_size + 1)
+
+def create(number, color):
+    group = []
+    for i in range(number):
+        group.append(atom(randomxy(), randomxy(), color))
+        atoms.append((group[i]))
+    return group
+
+def rule(atoms1, atoms2, g):
+    for i in range(len(atoms1)):
+        fx = 0
+        fy = 0
+        a = atoms1[i]
+        for j in range(len(atoms2)):
+            b = atoms2[j]
+            dx = a["x"] - b["x"]
+            dy = a["y"] - b["y"]
+            d = (dx*dx + dy*dy)**0.5
+            if( d > 0):
+                F = g/d
+                fx += F*dx
+                fy += F*dy
+        a["vx"] = (a["vx"] + fx)*0.5
+        a["vy"] = (a["vy"] + fy)*0.5
+        a["x"] += a["vx"]
+        a["y"] += a["vy"]
+        if(a["x"] <= 0 or a["x"] >= window_size):
+            a["vx"] *=-1
+        if(a["y"] <= 0 or a["y"] >= window_size):
+            a["vy"] *=-1      
+
+def mangia(group1, group2):
+    for i in range(len(group1)):
+        x1=group1[i]["x"]
+        y1=group1[i]["y"]
+        for j in range(len(group2) -1,-1,-1):
+            x2=group2[j]["x"]
+            y2=group2[j]["y"]
+            d=sqrt(((x1-x2)**2)+((y1-y2)**2))
+            if d<=2:
+                #print("aaaaa")
+                bimbo=atom(x1+1, y1+1, group1[i]["color"])
+                atoms.append(bimbo)
+                group1.append(bimbo)
+                morto=group2[j]
+                atoms.remove(morto)
+                group2.remove(morto)
+                #print(f"ci sono {len(group1)} rossi e {len(group2)} verdi")
+                
+                break  # Important: break out of the inner loop after eating
+
+def bordo():
+        for j in range(len(atoms)):
+            collision=False
+            x=atoms[j]["x"]
+            y=atoms[j]["y"]
+            axisX=window_size/2
+            axisY=axisX
+            if x>=axisX:
+                while axisX<window_size-3:
+                    axisX=axisX+axisX/2
+                    if x<axisX:
+                        break
+                    collision=True 
+                
+            elif x<axisX:
+                while axisX>3:
+                    axisX=axisX-axisX/2
+                    if x>axisX:
+                        break
+                    collision=True
+
+            if y>=axisY:
+                while axisY<window_size-3:
+                    axisY=axisY+axisY/2
+                    if y<axisY:
+                        break
+                    collision=True
+
+            elif y<axisY:
+                while axisY>3:
+                    axisY=axisY-axisY/2
+                    if y>axisY:
+                        break
+                    collision=True
+
+            if collision:
+                atoms[j]["vx"]=atoms[j]["vx"]*-1.5
+                atoms[j]["vy"]=atoms[j]["vy"]*-1.5
+                if x >= window_size-3:
+                    atoms[j]["x"] = window_size-5
+                elif x <= 3:
+                    atoms[j]["x"] = 5
+                if y > window_size-3:
+                    atoms[j]["y"] = window_size-5
+                elif y <= 3:
+                    atoms[j]["y"] = 5
+
+#crea bordo
+Bordo=[]
+L=window_size
+for i in range(L*3):
+        Bordo.append(atom(i, 0, "pink"))
+        Bordo.append(atom(L, i, "pink"))
+        Bordo.append(atom(L-i, L, "pink"))
+        Bordo.append(atom(0, L-i, "pink"))
+
+
+
+blue=create(50, "blue")
+yellow = create(0, "yellow")
+red = create(100, "red")
+pink = create (0, "pink")
+orange = create(0, "orange")
+green = create(100, "green") 
+run = True
+
+for k in range(0,21):
+    K.append(caso())
+
+while run:
+    window.fill(0)
+    
+    #mangia(red, green) 
+    #mangia(blue, red)
+    #mangia(green, blue)
+
+    bordo()
+    
+    rule(red, red, 0.2)
+    rule(red, green, -0.3)
+    rule(green, red, -0.7)
+
+    rule(blue, blue, 3)
+    rule(blue, red, 0.1)
+    rule(red, blue, 0.2)
+
+    rule(green, green, 0.2)
+    rule(green,blue, -0.9)
+    rule(blue, green, -0.7)
+
+    for i in range(len(atoms)):
+        draw(window,  atoms[i]["x"], atoms[i]["y"], atoms[i]["color"], 3)
+    #for i in range(len(Bordo)):
+    #    draw(window,  Bordo[i]["x"], Bordo[i]["y"], "white", 3)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+    pygame.display.flip()
+
+pygame.quit()
+exit()
